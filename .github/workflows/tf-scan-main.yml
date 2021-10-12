@@ -5,9 +5,8 @@ on:
       - terraform-kickstarter
   workflow_dispatch:
     inputs:
-    
-      -name: branchNname
-        id: branchName
+      logLevel:
+        default: 'warning'
 jobs:
   build:
 
