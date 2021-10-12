@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - terraform-kickstarter
+  workflow_dispatch:
 jobs:
   build:
 
