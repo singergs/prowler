@@ -4,6 +4,10 @@ on:
     branches:
       - terraform-kickstarter
   workflow_dispatch:
+    inputs:
+    
+      -name: branchNname
+        id: branchName
 jobs:
   build:
 
