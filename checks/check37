@@ -36,16 +36,16 @@
 #     --actions-enabled \
 #     --alarm-actions arn:aws:sns:us-east-1:123456789012:CloudWatchAlarmTopic
 
-CHECK_ID_check37="3.7"
-CHECK_TITLE_check37="[check37] Ensure a log metric filter and alarm exist for disabling or scheduled deletion of customer created KMS CMKs"
-CHECK_SCORED_check37="SCORED"
-CHECK_CIS_LEVEL_check37="LEVEL2"
-CHECK_SEVERITY_check37="Medium"
-CHECK_ASFF_TYPE_check37="Software and Configuration Checks/Industry and Regulatory Standards/CIS AWS Foundations Benchmark"
-CHECK_ASFF_RESOURCE_TYPE_check37="AwsCloudTrailTrail"
-CHECK_ALTERNATE_check307="check37"
-CHECK_ASFF_COMPLIANCE_TYPE_check37="ens-op.exp.11.aws.kms.1"
-CHECK_SERVICENAME_check37="kms"
+CHECK_ID_check37='3.7'
+CHECK_TITLE_check37='[check37] Ensure a log metric filter and alarm exist for disabling or scheduled deletion of customer created KMS CMKs'
+CHECK_SCORED_check37='SCORED'
+CHECK_CIS_LEVEL_check37='LEVEL2'
+CHECK_SEVERITY_check37='Medium'
+CHECK_ASFF_TYPE_check37='Software and Configuration Checks/Industry and Regulatory Standards/CIS AWS Foundations Benchmark'
+CHECK_ASFF_RESOURCE_TYPE_check37='AwsCloudTrailTrail'
+CHECK_ALTERNATE_check307='check37'
+CHECK_ASFF_COMPLIANCE_TYPE_check37='ens-op.exp.11.aws.kms.1'
+CHECK_SERVICENAME_check37='kms'
 CHECK_RISK_check37='Monitoring unauthorized API calls will help reveal application errors and may reduce time to detect malicious activity.'
 CHECK_REMEDIATION_check37='It is recommended that a metric filter and alarm be established for unauthorized requests.'
 CHECK_DOC_check37='https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudwatch-alarms-for-cloudtrail.html'
