@@ -13,7 +13,7 @@
 CHECK_ID_extra7128="7.128"
 CHECK_TITLE_extra7128="[extra7128] Check if DynamoDB table has encryption at rest enabled using CMK KMS"
 CHECK_SCORED_extra7128="NOT_SCORED"
-CHECK_TYPE_extra7128="EXTRA"
+CHECK_CIS_LEVEL_extra7128="EXTRA"
 CHECK_SEVERITY_extra7128="Medium"
 CHECK_ASFF_RESOURCE_TYPE_extra7128="AwsDynamoDBTable"
 CHECK_ALTERNATE_check7128="extra7128"
@@ -26,7 +26,11 @@ CHECK_CAF_EPIC_extra7128='Data Protection'
 
 extra7128(){
   for regx in $REGIONS; do
-    DDB_TABLES_LIST=$($AWSCLI dynamodb list-tables $PROFILE_OPT --region $regx --output text --query TableNames)
+    DDB_TABLES_LIST=$($AWSCLI dynamodb list-tables $PROFILE_OPT --region $regx --output text --query TableNames 2>&1)
+    if [[ $(echo "$DDB_TABLES_LIST" | grep -E 'AccessDenied|UnauthorizedOperation|AuthorizationError') ]]; then
+        textInfo "$regx: Access Denied trying to list tables" "$regx"
+        continue
+    fi
     if [[ $DDB_TABLES_LIST ]]; then
       for table in $DDB_TABLES_LIST; do
           DDB_TABLE_WITH_KMS=$($AWSCLI dynamodb describe-table --table-name $table $PROFILE_OPT --region $regx --query Table.SSEDescription.SSEType --output text)

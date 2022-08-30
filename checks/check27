@@ -14,7 +14,7 @@
 CHECK_ID_check27="2.7"
 CHECK_TITLE_check27="[check27] Ensure CloudTrail logs are encrypted at rest using KMS CMKs"
 CHECK_SCORED_check27="SCORED"
-CHECK_TYPE_check27="LEVEL2"
+CHECK_CIS_LEVEL_check27="LEVEL2"
 CHECK_SEVERITY_check27="Medium"
 CHECK_ASFF_TYPE_check27="Software and Configuration Checks/Industry and Regulatory Standards/CIS AWS Foundations Benchmark"
 CHECK_ASFF_RESOURCE_TYPE_check27="AwsCloudTrailTrail"
@@ -32,7 +32,7 @@ check27(){
   for regx in $REGIONS; do
     TRAILS_AND_REGIONS=$($AWSCLI cloudtrail describe-trails $PROFILE_OPT --region $regx --query 'trailList[*].{Name:TrailARN, HomeRegion:HomeRegion}' --output text 2>&1 | tr "	" ',')
     if [[ $(echo "$TRAILS_AND_REGIONS" | grep AccessDenied) ]]; then
-      textFail "$regx: Access Denied trying to describe trails" "$regx" "$trail"
+      textInfo "$regx: Access Denied trying to describe trails" "$regx" "$trail"
       continue
     fi
     if [[ $TRAILS_AND_REGIONS ]]; then

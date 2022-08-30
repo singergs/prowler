@@ -13,28 +13,28 @@
 CHECK_ID_extra761="7.61"
 CHECK_TITLE_extra761="[extra761] Check if EBS Default Encryption is activated "
 CHECK_SCORED_extra761="NOT_SCORED"
-CHECK_TYPE_extra761="EXTRA"
+CHECK_CIS_LEVEL_extra761="EXTRA"
 CHECK_SEVERITY_extra761="Medium"
 CHECK_ALTERNATE_check761="extra761"
 CHECK_ASFF_COMPLIANCE_TYPE_extra761="ens-mp.info.3.aws.ebs.2"
 CHECK_SERVICENAME_extra761="ec2"
-CHECK_RISK_extra761='If not enabled sensible information at rest is not protected.'
+CHECK_RISK_extra761='If not enabled sensitive information at rest is not protected.'
 CHECK_REMEDIATION_extra761='Enable Encryption. Use a CMK where possible. It will provide additional management and privacy benefits.'
 CHECK_DOC_extra761='https://aws.amazon.com/premiumsupport/knowledge-center/ebs-automatic-encryption/'
 CHECK_CAF_EPIC_extra761='Data Protection'
 
 extra761(){
   for regx in $REGIONS; do
-    EBS_DEFAULT_ENCRYPTION=$($AWSCLI ec2 get-ebs-encryption-by-default $PROFILE_OPT --region $regx --query 'EbsEncryptionByDefault' 2>&1)
+    EBS_DEFAULT_ENCRYPTION=$($AWSCLI ec2 get-ebs-encryption-by-default $PROFILE_OPT --region $regx --query 'EbsEncryptionByDefault' --output text 2>&1)
     if [[ $(echo "$EBS_DEFAULT_ENCRYPTION" | grep "argument operation: Invalid choice") ]]; then
-      textFail "$regx: Newer aws cli needed for get-ebs-encryption-by-default" "$regx"
+      textInfo "$regx: Newer aws cli needed for get-ebs-encryption-by-default" "$regx"
       continue
     fi
     if [[ $(echo "$EBS_DEFAULT_ENCRYPTION" | grep UnauthorizedOperation) ]]; then
-      textFail "$regx: Prowler needs ec2:GetEbsEncryptionByDefault permission for this check" "$regx"
+      textInfo "$regx: Prowler needs ec2:GetEbsEncryptionByDefault permission for this check" "$regx"
       continue
     fi
-    if [[ $EBS_DEFAULT_ENCRYPTION == "true" ]];then
+    if [[ $EBS_DEFAULT_ENCRYPTION == "True" ]];then
       textPass "$regx: EBS Default Encryption is activated" "$regx"
     else
       textFail "$regx: EBS Default Encryption is not activated" "$regx"

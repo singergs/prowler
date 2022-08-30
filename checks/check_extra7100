@@ -17,7 +17,7 @@
 CHECK_ID_extra7100="7.100"
 CHECK_TITLE_extra7100="[extra7100] Ensure that no custom IAM policies exist which allow permissive role assumption (e.g. sts:AssumeRole on *)"
 CHECK_SCORED_extra7100="NOT_SCORED"
-CHECK_TYPE_extra7100="EXTRA"
+CHECK_CIS_LEVEL_extra7100="EXTRA"
 CHECK_SEVERITY_extra7100="Critical"
 CHECK_ASFF_RESOURCE_TYPE_extra7100="AwsIamPolicy"
 CHECK_ALTERNATE_check7100="extra7100"
@@ -68,8 +68,7 @@ extra7100(){
 
     done
     if [[ $PERMISSIVE_POLICIES_LIST ]]; then
-      textInfo "STS AssumeRole Policies should only include the complete ARNs for the Roles that the user needs"
-      textInfo "Learn more: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use_permissions-to-switch.html#roles-usingrole-createpolicy"
+      textInfo "STS AssumeRole Policies should only include the complete ARNs for the Roles that the user needs. Learn more: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use_permissions-to-switch.html#roles-usingrole-createpolicy" "$REGION"
       for policy in $PERMISSIVE_POLICIES_LIST; do
         textFail "$REGION: Policy $policy allows permissive STS Role assumption" "$REGION" "$policy"
       done

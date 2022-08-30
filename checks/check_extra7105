@@ -14,7 +14,7 @@
 CHECK_ID_extra7105="7.105"
 CHECK_TITLE_extra7105="[extra7105] Check if Amazon SageMaker Models have network isolation enabled"
 CHECK_SCORED_extra7105="NOT_SCORED"
-CHECK_TYPE_extra7105="EXTRA"
+CHECK_CIS_LEVEL_extra7105="EXTRA"
 CHECK_ASFF_RESOURCE_TYPE_extra7105="AwsSageMakerModel"
 CHECK_ALTERNATE_check7105="extra7105"
 CHECK_SEVERITY_extra7105="Medium"
@@ -26,7 +26,11 @@ CHECK_CAF_EPIC_extra7105='Infrastructure Security'
 
 extra7105(){
 	for regx in ${REGIONS}; do
-		LIST_SM_NB_MODELS=$($AWSCLI $PROFILE_OPT --region $regx sagemaker list-models --query 'Models[*].ModelName' --output text)
+		LIST_SM_NB_MODELS=$($AWSCLI $PROFILE_OPT --region $regx sagemaker list-models --query 'Models[*].ModelName' --output text 2>&1)
+        if [[ $(echo "$LIST_SM_NB_MODELS" | grep -E 'AccessDenied|UnauthorizedOperation|AuthorizationError') ]]; then
+            textInfo "$regx: Access Denied trying to list models" "$regx"
+            continue
+        fi
 		if [[ $LIST_SM_NB_MODELS ]];then 
 			for nb_model_name in $LIST_SM_NB_MODELS; do
 				SM_NB_NETWORKISOLATION=$($AWSCLI $PROFILE_OPT --region $regx sagemaker describe-model --model-name $nb_model_name --query 'EnableNetworkIsolation' --output text)

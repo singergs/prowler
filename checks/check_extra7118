@@ -13,19 +13,23 @@
 CHECK_ID_extra7118="7.118"
 CHECK_TITLE_extra7118="[extra7118] Check if Glue ETL Jobs have S3 encryption enabled."
 CHECK_SCORED_extra7118="NOT_SCORED"
-CHECK_TYPE_extra7118="EXTRA"
+CHECK_CIS_LEVEL_extra7118="EXTRA"
 CHECK_SEVERITY_extra7118="Medium"
 CHECK_ASFF_RESOURCE_TYPE_extra7118="AwsGlue"
 CHECK_ALTERNATE_check7118="extra7118"
 CHECK_SERVICENAME_extra7118="glue"
-CHECK_RISK_extra7118='If not enabled sensible information at rest is not protected.'
+CHECK_RISK_extra7118='If not enabled sensitive information at rest is not protected.'
 CHECK_REMEDIATION_extra7118='Provide the encryption properties that are used by crawlers; jobs; and development endpoints.'
 CHECK_DOC_extra7118='https://docs.aws.amazon.com/glue/latest/dg/console-security-configurations.html'
 CHECK_CAF_EPIC_extra7118='Data Protection'
 
 extra7118(){
   for regx in $REGIONS; do
-    JOB_LIST=$($AWSCLI glue get-jobs $PROFILE_OPT --region $regx --output json --query 'Jobs[*].{Name:Name,SecurityConfiguration:SecurityConfiguration,JobEncryption:DefaultArguments."--encryption-type"}')
+    JOB_LIST=$($AWSCLI glue get-jobs $PROFILE_OPT --region $regx --output json --query 'Jobs[*].{Name:Name,SecurityConfiguration:SecurityConfiguration,JobEncryption:DefaultArguments."--encryption-type"}' 2>&1)
+    if [[ $(echo "$JOB_LIST" | grep -E 'AccessDenied|UnauthorizedOperation|AuthorizationError') ]]; then
+        textInfo "$regx: Access Denied trying to get jobs" "$regx"
+        continue
+    fi
     if [[ $JOB_LIST != '[]' ]]; then
       for job in $(echo "${JOB_LIST}" | jq -r '.[] | @base64'); do
           JOB_NAME=$(echo $job | base64 --decode | jq -r '.Name')

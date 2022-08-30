@@ -13,28 +13,47 @@
 CHECK_ID_extra767="7.67"
 CHECK_TITLE_extra767="[extra767] Check if CloudFront distributions have Field Level Encryption enabled "
 CHECK_SCORED_extra767="NOT_SCORED"
-CHECK_TYPE_extra767="EXTRA"
+CHECK_CIS_LEVEL_extra767="EXTRA"
 CHECK_SEVERITY_extra767="Low"
 CHECK_ASFF_RESOURCE_TYPE_extra767="AwsCloudFrontDistribution"
 CHECK_ALTERNATE_check767="extra767"
 CHECK_SERVICENAME_extra767="cloudfront"
 CHECK_RISK_extra767='Allows you protect specific data throughout system processing so that only certain applications can see it.'
-CHECK_REMEDIATION_extra767='Check if applicable to any sensible data. This encryption ensures that only applications that need the data—and have the credentials to decrypt it - are able to do so.'
+CHECK_REMEDIATION_extra767='Check if applicable to any sensitive data. This encryption ensures that only applications that need the data—and have the credentials to decrypt it - are able to do so.'
 CHECK_DOC_extra767='https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/field-level-encryption.html'
 CHECK_CAF_EPIC_extra767='Data Protection'
 
 extra767(){
-    LIST_OF_DISTRIBUTIONS=$($AWSCLI cloudfront list-distributions --query 'DistributionList.Items[*].Id' $PROFILE_OPT --output text|grep -v ^None)
+    LIST_OF_DISTRIBUTIONS=$("${AWSCLI}" cloudfront list-distributions --query 'DistributionList.Items[*].Id' ${PROFILE_OPT} --output text | grep -v ^None)
+    if grep -q -E 'AccessDenied|UnauthorizedOperation|AuthorizationError' <<< "${LIST_OF_DISTRIBUTIONS}"; then
+        textInfo "${REGION}: Access Denied Trying to list CloudFront distributions" "${REGION}"
+        exit
+    fi
     if [[ $LIST_OF_DISTRIBUTIONS ]];then
-      for dist in $LIST_OF_DISTRIBUTIONS; do
-        CHECK_FLE=$($AWSCLI cloudfront get-distribution --id $dist --query Distribution.DistributionConfig.DefaultCacheBehavior.FieldLevelEncryptionId $PROFILE_OPT --output text)
-        if [[ $CHECK_FLE ]]; then
-          textPass "CloudFront distribution $dist has Field Level Encryption enabled" "$regx" "$dist"
+      for distribution in $LIST_OF_DISTRIBUTIONS; do
+        CHECK_ALLOWED_METHODS=$("${AWSCLI}" cloudfront get-distribution --id "${distribution}" --query Distribution.DistributionConfig.DefaultCacheBehavior.AllowedMethods.Items ${PROFILE_OPT} --output text)
+        if grep -q -E 'AccessDenied|UnauthorizedOperation|AuthorizationError' <<< "${CHECK_ALLOWED_METHODS}"; then
+            textInfo "${REGION}: Access Denied Trying to get CloudFront distributions" "${REGION}"
+            continue
+        fi
+        
+        if [[ "$CHECK_ALLOWED_METHODS" =~ "POST" ]]; then
+            CHECK_FIELD_LEVEL_ENCRYPTION=$("${AWSCLI}" cloudfront get-distribution --id "${distribution}" --query Distribution.DistributionConfig.DefaultCacheBehavior.FieldLevelEncryptionId ${PROFILE_OPT} --output text)
+            if grep -q -E 'AccessDenied|UnauthorizedOperation|AuthorizationError' <<< "${CHECK_FIELD_LEVEL_ENCRYPTION}"; then
+                textInfo "${REGION}: Access Denied Trying to get CloudFront distributions" "${REGION}"
+                continue
+            fi
+            
+            if [[ $CHECK_FIELD_LEVEL_ENCRYPTION ]]; then
+                textPass "CloudFront distribution ${distribution} has Field Level Encryption enabled" "${REGION}" "${distribution}"
+            else
+                textFail "CloudFront distribution ${distribution} has Field Level Encryption disabled!" "${REGION}" "${distribution}"
+            fi
         else
-          textFail "CloudFront distribution $dist has Field Level Encryption disabled!" "$regx" "$dist"
+            textPass "CloudFront distribution ${distribution} does not support POST requests"
         fi
       done
     else
-      textInfo "No CloudFront distributions found" "$regx"
+      textPass "No CloudFront distributions found" "${REGION}"
     fi
 }

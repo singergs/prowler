@@ -13,7 +13,7 @@
 CHECK_ID_extra75="7.5"
 CHECK_TITLE_extra75="[extra75] Ensure there are no Security Groups not being used"
 CHECK_SCORED_extra75="NOT_SCORED"
-CHECK_TYPE_extra75="EXTRA"
+CHECK_CIS_LEVEL_extra75="EXTRA"
 CHECK_SEVERITY_extra75="Informational"
 CHECK_ASFF_RESOURCE_TYPE_extra75="AwsEc2SecurityGroup"
 CHECK_ALTERNATE_extra705="extra75"
@@ -29,17 +29,22 @@ CHECK_CAF_EPIC_extra75='Infrastructure Security'
 extra75(){
   # "Ensure there are no Security Groups not being used "
   for regx in $REGIONS; do
-    SECURITYGROUPS=$($AWSCLI ec2 describe-security-groups $PROFILE_OPT --region $regx --max-items $MAXITEMS --output json | jq '.SecurityGroups|map({(.GroupId): (.GroupName)})|add')
-    if [[ $SECURITYGROUPS == "null" ]];
-    then
+    SECURITYGROUPS=$($AWSCLI ec2 describe-security-groups $PROFILE_OPT --region $regx --max-items $MAXITEMS --output json 2>&1 )
+    if [[ $(echo "$SECURITYGROUPS" | grep -E 'AccessDenied|UnauthorizedOperation') ]]; then
+        textInfo "$regx: Access Denied trying to describe security groups" "$regx"
+        continue
+    fi
+    if [[ $(echo "$SECURITYGROUPS" | jq '."SecurityGroups" | length') -eq 0 ]]; then
+      textInfo "$regx: No Security Groups found in $regx" "$regx"
       continue
     fi
-    LIST_OF_SECURITYGROUPS=$(echo $SECURITYGROUPS|jq -r 'to_entries|sort_by(.key)|.[]|.key')
+    SECURITYGROUP_NAMES=$(echo $SECURITYGROUPS | jq '.SecurityGroups|map({(.GroupId): (.GroupName)})|add')
+    LIST_OF_SECURITYGROUPS=$(echo $SECURITYGROUP_NAMES | jq -r 'to_entries|sort_by(.key)|.[]|.key')
     for SG_ID in $LIST_OF_SECURITYGROUPS; do
       SG_NOT_USED=$($AWSCLI ec2 describe-network-interfaces $PROFILE_OPT --region $regx --filters "Name=group-id,Values=$SG_ID" --query "length(NetworkInterfaces)" --output text)
       # Default security groups can not be deleted, so draw attention to them
       if [[ $SG_NOT_USED -eq 0 ]];then
-        GROUP_NAME=$(echo $SECURITYGROUPS | jq -r --arg id $SG_ID '.[$id]')
+        GROUP_NAME=$(echo $SECURITYGROUP_NAMES | jq -r --arg id $SG_ID '.[$id]')
         if [[ $GROUP_NAME != "default" ]];
         then
           textFail "$regx: $SG_ID is not being used!" "$regx" "$SG_ID"

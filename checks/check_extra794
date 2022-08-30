@@ -13,7 +13,7 @@
 CHECK_ID_extra794="7.94"
 CHECK_TITLE_extra794="[extra794] Ensure EKS Control Plane Audit Logging is enabled for all log types"
 CHECK_SCORED_extra794="NOT_SCORED"
-CHECK_TYPE_extra794="EXTRA"
+CHECK_CIS_LEVEL_extra794="EXTRA"
 CHECK_SEVERITY_extra794="Medium"
 CHECK_ASFF_RESOURCE_TYPE_extra794="AwsEksCluster"
 CHECK_ALTERNATE_check794="extra794"
@@ -25,7 +25,11 @@ CHECK_CAF_EPIC_extra794='Logging and Monitoring'
 
 extra794(){
   for regx in $REGIONS; do
-    CLUSTERS=$($AWSCLI eks list-clusters $PROFILE_OPT --region $regx --query 'clusters[]' --output text)
+    CLUSTERS=$($AWSCLI eks list-clusters $PROFILE_OPT --region $regx --query 'clusters[]' --output text 2>&1)
+    if [[ $(echo "$CLUSTERS" | grep -E 'AccessDenied|UnauthorizedOperation|AuthorizationError') ]]; then
+        textInfo "$regx: Access Denied trying to list EKS clusters" "$regx"
+        continue
+    fi
     if [[ $CLUSTERS ]]; then
       for CLUSTER in $CLUSTERS;do
         CLUSTERDEF=$($AWSCLI eks describe-cluster $PROFILE_OPT --region $regx --name $CLUSTER --query 'cluster.logging.clusterLogging[0]')
@@ -35,7 +39,7 @@ extra794(){
            if [[ $(echo $TYPES | egrep "api.*audit.*authenticator.*controllerManager.*scheduler") ]]; then
               textPass "$regx: Control plane logging enabled and correctly configured for EKS cluster $CLUSTER" "$regx" "$CLUSTER"
            else
-              textFail "$regx: Control plane logging enabled, but not all log types collected for EKS cluster $CLUSTER" "$regx" "$CLUSTER"
+              textFail "$regx: Control plane logging enabled; not all log types collected for EKS cluster $CLUSTER" "$regx" "$CLUSTER"
            fi
         else
               textFail "$regx: Control plane logging is not enabled for EKS cluster $CLUSTER" "$regx" "$CLUSTER"

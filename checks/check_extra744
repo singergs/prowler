@@ -13,7 +13,7 @@
 CHECK_ID_extra744="7.44"
 CHECK_TITLE_extra744="[extra744] Check if API Gateway has a WAF ACL attached"
 CHECK_SCORED_extra744="NOT_SCORED"
-CHECK_TYPE_extra744="EXTRA"
+CHECK_CIS_LEVEL_extra744="EXTRA"
 CHECK_SEVERITY_extra744="Medium"
 CHECK_ASFF_RESOURCE_TYPE_extra744="AwsApiGatewayRestApi"
 CHECK_ALTERNATE_check744="extra744"
@@ -26,7 +26,11 @@ CHECK_CAF_EPIC_extra744='Infrastructure Security'
 
 extra744(){
   for regx in $REGIONS; do
-    LIST_OF_REST_APIS=$($AWSCLI $PROFILE_OPT --region $regx apigateway get-rest-apis --query 'items[*].id' --output text)
+    LIST_OF_REST_APIS=$($AWSCLI $PROFILE_OPT --region $regx apigateway get-rest-apis --query 'items[*].id' --output text 2>&1)
+    if [[ $(echo "$LIST_OF_REST_APIS" | grep -E 'AccessDenied|UnauthorizedOperation|AuthorizationError') ]]; then
+        textInfo "$regx: Access Denied trying to get rest APIs" "$regx"
+        continue
+    fi 
     if [[ $LIST_OF_REST_APIS ]];then
       for api in $LIST_OF_REST_APIS; do
         API_GW_NAME=$($AWSCLI apigateway get-rest-apis $PROFILE_OPT --region $regx --query "items[?id==\`$api\`].name" --output text)

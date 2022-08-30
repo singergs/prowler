@@ -13,7 +13,7 @@
 CHECK_ID_extra739="7.39"
 CHECK_TITLE_extra739="[extra739] Check if RDS instances have backup enabled"
 CHECK_SCORED_extra739="NOT_SCORED"
-CHECK_TYPE_extra739="EXTRA"
+CHECK_CIS_LEVEL_extra739="EXTRA"
 CHECK_SEVERITY_extra739="Medium"
 CHECK_ASFF_RESOURCE_TYPE_extra739="AwsRdsDbInstance"
 CHECK_ALTERNATE_check739="extra739"
@@ -25,7 +25,11 @@ CHECK_CAF_EPIC_extra739='Data Protection'
 
 extra739(){
   for regx in $REGIONS; do
-    LIST_OF_RDS_INSTANCES=$($AWSCLI rds describe-db-instances $PROFILE_OPT --region $regx --query 'DBInstances[*].DBInstanceIdentifier' --output text)
+    LIST_OF_RDS_INSTANCES=$($AWSCLI rds describe-db-instances $PROFILE_OPT --region $regx --query 'DBInstances[*].DBInstanceIdentifier' --output text 2>&1)
+    if [[ $(echo "$LIST_OF_RDS_INSTANCES" | grep -E 'AccessDenied|UnauthorizedOperation|AuthorizationError') ]]; then
+        textInfo "$regx: Access Denied trying to describe DB instances" "$regx"
+        continue
+    fi 
     if [[ $LIST_OF_RDS_INSTANCES ]];then
       for rdsinstance in $LIST_OF_RDS_INSTANCES; do
         # if retention is 0 then is disabled

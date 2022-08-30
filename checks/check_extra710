@@ -13,7 +13,7 @@
 CHECK_ID_extra710="7.10"
 CHECK_TITLE_extra710="[extra710] Check for internet facing EC2 Instances"
 CHECK_SCORED_extra710="NOT_SCORED"
-CHECK_TYPE_extra710="EXTRA"
+CHECK_CIS_LEVEL_extra710="EXTRA"
 CHECK_SEVERITY_extra710="Medium"
 CHECK_ASFF_RESOURCE_TYPE_extra710="AwsEc2Instance"
 CHECK_ALTERNATE_check710="extra710"
@@ -27,7 +27,11 @@ CHECK_CAF_EPIC_extra710='Infrastructure Security'
 extra710(){
   # "Check for internet facing EC2 Instances "
   for regx in $REGIONS; do
-    LIST_OF_PUBLIC_INSTANCES=$($AWSCLI ec2 describe-instances $PROFILE_OPT --region $regx --query 'Reservations[*].Instances[?PublicIpAddress].[InstanceId,PublicIpAddress]' --output text)
+    LIST_OF_PUBLIC_INSTANCES=$($AWSCLI ec2 describe-instances $PROFILE_OPT --region $regx --query 'Reservations[*].Instances[?PublicIpAddress].[InstanceId,PublicIpAddress]' --output text 2>&1)
+    if [[ $(echo "$LIST_OF_PUBLIC_INSTANCES" | grep -E 'AccessDenied|UnauthorizedOperation') ]]; then
+        textInfo "$regx: Access Denied trying to describe instances" "$regx"
+        continue
+    fi
     if [[ $LIST_OF_PUBLIC_INSTANCES ]];then
       while read -r instance;do
         INSTANCE_ID=$(echo $instance | awk '{ print $1; }')

@@ -14,7 +14,7 @@
 CHECK_ID_check45="4.5"
 CHECK_TITLE_check45="[check45] Ensure no Network ACLs allow ingress from 0.0.0.0/0 to SSH port 22"
 CHECK_SCORED_check45="SCORED"
-CHECK_TYPE_check45="LEVEL2"
+CHECK_CIS_LEVEL_check45="LEVEL2"
 CHECK_SEVERITY_check45="High"
 CHECK_ASFF_TYPE_check45="Software and Configuration Checks/Industry and Regulatory Standards/CIS AWS Foundations Benchmark"
 CHECK_ASFF_RESOURCE_TYPE_check45="AwsEc2NetworkAcl"
@@ -27,7 +27,11 @@ CHECK_CAF_EPIC_check45='Infrastructure Security'
 
 check45(){
   for regx in $REGIONS; do
-    NACL_LIST=$($AWSCLI ec2 describe-network-acls --query 'NetworkAcls[?Entries[?(((!PortRange) || (PortRange.From<=`22` && PortRange.To>=`22`)) && ((CidrBlock == `0.0.0.0/0`) && (Egress == `false`) && (RuleAction == `allow`)))]].{NetworkAclId:NetworkAclId}' $PROFILE_OPT --region $regx --output text)
+    NACL_LIST=$($AWSCLI ec2 describe-network-acls --query 'NetworkAcls[?Entries[?(((!PortRange) || (PortRange.From<=`22` && PortRange.To>=`22`)) && ((CidrBlock == `0.0.0.0/0`) && (Egress == `false`) && (RuleAction == `allow`)))]].{NetworkAclId:NetworkAclId}' $PROFILE_OPT --region $regx --output text 2>&1)
+    if [[ $(echo "$NACL_LIST" | grep -E 'AccessDenied|UnauthorizedOperation') ]]; then
+        textInfo "$regx: Access Denied trying to describe vpc network acls" "$regx"
+        continue
+    fi
     if [[ $NACL_LIST ]];then
       for NACL in $NACL_LIST;do
         textInfo "$regx: Found Network ACL: $NACL open to 0.0.0.0/0 for SSH port 22" "$regx" "$NACL"

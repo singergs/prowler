@@ -13,20 +13,24 @@
 CHECK_ID_extra735="7.35"
 CHECK_TITLE_extra735="[extra735] Check if RDS instances storage is encrypted"
 CHECK_SCORED_extra735="NOT_SCORED"
-CHECK_TYPE_extra735="EXTRA"
+CHECK_CIS_LEVEL_extra735="EXTRA"
 CHECK_SEVERITY_extra735="Medium"
 CHECK_ASFF_RESOURCE_TYPE_extra735="AwsRdsDbInstance"
 CHECK_ALTERNATE_check735="extra735"
 CHECK_ASFF_COMPLIANCE_TYPE_extra735="ens-mp.info.3.aws.rds.1"
 CHECK_SERVICENAME_extra735="rds"
-CHECK_RISK_extra735='If not enabled sensible information at rest is not protected.'
+CHECK_RISK_extra735='If not enabled sensitive information at rest is not protected.'
 CHECK_REMEDIATION_extra735='Enable Encryption. Use a CMK where possible. It will provide additional management and privacy benefits.'
 CHECK_DOC_extra735='https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Overview.Encryption.html'
 CHECK_CAF_EPIC_extra735='Data Protection'
 
 extra735(){
   for regx in $REGIONS; do
-    LIST_OF_RDS_INSTANCES=$($AWSCLI rds describe-db-instances $PROFILE_OPT --region $regx --query 'DBInstances[*].DBInstanceIdentifier' --output text)
+    LIST_OF_RDS_INSTANCES=$($AWSCLI rds describe-db-instances $PROFILE_OPT --region $regx --query 'DBInstances[*].DBInstanceIdentifier' --output text 2>&1)
+    if [[ $(echo "$LIST_OF_RDS_INSTANCES" | grep -E 'AccessDenied|UnauthorizedOperation|AuthorizationError') ]]; then
+        textInfo "$regx: Access Denied trying to describe DB instances" "$regx"
+        continue
+    fi 
     if [[ $LIST_OF_RDS_INSTANCES ]];then
       for rdsinstance in $LIST_OF_RDS_INSTANCES; do
         IS_ENCRYPTED=$($AWSCLI rds describe-db-instances $PROFILE_OPT --region $regx --db-instance-identifier $rdsinstance --query 'DBInstances[*].StorageEncrypted' --output text)

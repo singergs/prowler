@@ -14,26 +14,39 @@
 CHECK_ID_extra728="7.28"
 CHECK_TITLE_extra728="[extra728] Check if SQS queues have Server Side Encryption enabled"
 CHECK_SCORED_extra728="NOT_SCORED"
-CHECK_TYPE_extra728="EXTRA"
+CHECK_CIS_LEVEL_extra728="EXTRA"
 CHECK_SEVERITY_extra728="Medium"
 CHECK_ASFF_RESOURCE_TYPE_extra728="AwsSqsQueue"
 CHECK_ALTERNATE_check728="extra728"
 CHECK_ASFF_COMPLIANCE_TYPE_extra728="ens-mp.info.3.sns.1"
 CHECK_SERVICENAME_extra728="sqs"
-CHECK_RISK_extra728='If not enabled sensible information in transit is not protected.'
+CHECK_RISK_extra728='If not enabled sensitive information in transit is not protected.'
 CHECK_REMEDIATION_extra728='Enable Encryption. Use a CMK where possible. It will provide additional management and privacy benefits.'
 CHECK_DOC_extra728='https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-configure-sse-existing-queue.html'
 CHECK_CAF_EPIC_extra728='Data Protection'
 
 extra728(){
   for regx in $REGIONS; do
-    LIST_SQS=$($AWSCLI sqs list-queues $PROFILE_OPT --region $regx --query QueueUrls --output text |grep -v ^None)
+    LIST_SQS=$("$AWSCLI" sqs list-queues $PROFILE_OPT --region "$regx" --query QueueUrls --output text 2>&1|grep -v ^None )
+    if grep -q -E 'AccessDenied|UnauthorizedOperation|AuthorizationError' <<< "${LIST_SQS}"; then
+        textInfo "$regx: Access Denied trying to list queues" "$regx"
+        continue
+    fi 
     if [[ $LIST_SQS ]]; then
       for queue in $LIST_SQS; do
         # check if the policy has KmsMasterKeyId therefore SSE enabled
-        SSE_ENABLED_QUEUE=$($AWSCLI sqs get-queue-attributes --queue-url $queue $PROFILE_OPT --region $regx --attribute-names All --query Attributes.KmsMasterKeyId --output text|grep -v ^None)
-        if [[ $SSE_ENABLED_QUEUE ]]; then
-          textPass "$regx: SQS queue $queue is using Server Side Encryption" "$regx" "$queue"
+        SSE_KMS_ENABLED_QUEUE=$("$AWSCLI" sqs get-queue-attributes --queue-url "$queue" $PROFILE_OPT --region "$regx" --attribute-names All --query Attributes.KmsMasterKeyId --output text)
+        SSE_SQS_ENABLED_QUEUE=$("$AWSCLI" sqs get-queue-attributes --queue-url "$queue" $PROFILE_OPT --region "$regx" --attribute-names All --query Attributes.SqsManagedSseEnabled --output text)
+        if grep -q -E 'AccessDenied|UnauthorizedOperation|AuthorizationError' <<< "${SSE_SQS_ENABLED_QUEUE}"; then
+          textInfo "$regx: Access Denied trying to list queues" "$regx"
+          continue
+        elif grep -q -E 'AccessDenied|UnauthorizedOperation|AuthorizationError' <<< "${SSE_KMS_ENABLED_QUEUE}"; then
+          textInfo "$regx: Access Denied trying to list queues" "$regx"
+          continue
+        elif [[ "$SSE_KMS_ENABLED_QUEUE" != 'None' ]]; then
+          textPass "$regx: SQS queue $queue is using KMS Server Side Encryption" "$regx" "$queue"
+        elif [[ "$SSE_SQS_ENABLED_QUEUE" == 'true' ]]; then
+          textPass "$regx: SQS queue $queue is using SQS Server Side Encryption" "$regx" "$queue"
         else
           textFail "$regx: SQS queue $queue is not using Server Side Encryption" "$regx" "$queue"
         fi

@@ -13,7 +13,7 @@
 CHECK_ID_extra783="7.83"
 CHECK_TITLE_extra783="[extra783] Check if Amazon Elasticsearch Service (ES) domains has enforce HTTPS enabled"
 CHECK_SCORED_extra783="NOT_SCORED"
-CHECK_TYPE_extra783="EXTRA"
+CHECK_CIS_LEVEL_extra783="EXTRA"
 CHECK_SEVERITY_extra783="Medium"
 CHECK_ASFF_RESOURCE_TYPE_extra783="AwsElasticsearchDomain"
 CHECK_ALTERNATE_check783="extra783"
@@ -25,11 +25,19 @@ CHECK_CAF_EPIC_extra783='Data Protection'
 
 extra783(){
   for regx in $REGIONS; do
-    LIST_OF_DOMAINS=$($AWSCLI es list-domain-names $PROFILE_OPT --region $regx --query DomainNames --output text)
+    LIST_OF_DOMAINS=$($AWSCLI es list-domain-names $PROFILE_OPT --region $regx --query 'DomainNames[].DomainName' --output text 2>&1)
+    if [[ $(echo "$LIST_OF_DOMAINS" | grep -E 'AccessDenied|UnauthorizedOperation|AuthorizationError') ]]; then
+        textInfo "$regx: Access Denied trying to list domain names" "$regx"
+        continue
+    fi
     if [[ $LIST_OF_DOMAINS ]]; then
       for domain in $LIST_OF_DOMAINS;do
-        CHECK_IF_ENFORCEHTTPS_ENABLED=$($AWSCLI es describe-elasticsearch-domain --domain-name $domain $PROFILE_OPT --region $regx --query 'DomainStatus.DomainEndpointOptions.EnforceHTTPS' --output text|grep -i true)
-        if [[ $CHECK_IF_ENFORCEHTTPS_ENABLED ]];then
+        CHECK_IF_ENFORCEHTTPS_ENABLED=$($AWSCLI es describe-elasticsearch-domain --domain-name $domain $PROFILE_OPT --region $regx --query 'DomainStatus.DomainEndpointOptions.EnforceHTTPS' --output text 2>&1)
+        if [[ $(echo "$CHECK_IF_ENFORCEHTTPS_ENABLED" | grep -E 'AccessDenied|UnauthorizedOperation|AuthorizationError') ]]; then
+            textInfo "$regx: Access Denied trying to get ES domain $domain" "$regx"
+            continue
+        fi
+        if [[ $(echo "$CHECK_IF_ENFORCEHTTPS_ENABLED" | grep -i true) ]];then
           textPass "$regx: Amazon ES domain $domain has enforce HTTPS enabled" "$regx" "$domain"
         else
           textFail "$regx: Amazon ES domain $domain does not have enforce HTTPS enabled" "$regx" "$domain"

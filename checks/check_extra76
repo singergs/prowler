@@ -13,7 +13,7 @@
 CHECK_ID_extra76="7.6"
 CHECK_TITLE_extra76="[extra76] Ensure there are no EC2 AMIs set as Public"
 CHECK_SCORED_extra76="NOT_SCORED"
-CHECK_TYPE_extra76="EXTRA"
+CHECK_CIS_LEVEL_extra76="EXTRA"
 CHECK_SEVERITY_extra76="Critical"
 CHECK_ALTERNATE_extra706="extra76"
 CHECK_ALTERNATE_check76="extra76"
@@ -27,7 +27,11 @@ CHECK_CAF_EPIC_extra76='Infrastructure Security'
 extra76(){
   # "Ensure there are no EC2 AMIs set as Public "
   for regx in $REGIONS; do
-    LIST_OF_PUBLIC_AMIS=$($AWSCLI ec2 describe-images --owners self $PROFILE_OPT --region $regx --filters "Name=is-public,Values=true" --query 'Images[*].{ID:ImageId}' --output text)
+    LIST_OF_PUBLIC_AMIS=$($AWSCLI ec2 describe-images --owners self $PROFILE_OPT --region $regx --filters "Name=is-public,Values=true" --query 'Images[*].{ID:ImageId}' --output text 2>&1)
+    if [[ $(echo "$LIST_OF_PUBLIC_AMIS" | grep -E 'AccessDenied|UnauthorizedOperation') ]]; then
+        textInfo "$regx: Access Denied trying to describe images" "$regx"
+        continue
+    fi
     if [[ $LIST_OF_PUBLIC_AMIS ]];then
       for ami in $LIST_OF_PUBLIC_AMIS; do
         textFail "$regx: $ami is currently Public!" "$regx" "$ami"

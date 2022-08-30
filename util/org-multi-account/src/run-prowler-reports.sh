@@ -7,7 +7,7 @@ cd /home/ec2-user || exit
 
 # Show Prowler Version, and Download Prowler, if it doesn't already exist
 if ! ./prowler/prowler -V 2>/dev/null; then
-    git clone https://github.com/toniblyx/prowler.git
+    git clone https://github.com/prowler-cloud/prowler.git
     ./prowler/prowler -V
 fi
 
@@ -89,7 +89,7 @@ for accountId in $ACCOUNTS_IN_ORGS; do
         # Run Prowler
         echo -e "Assessing AWS Account: $accountId, using Role: $ROLE on $(date)"
         # remove -g cislevel for a full report and add other formats if needed
-        ./prowler/prowler -R "$ROLE" -A "$accountId" -g cislevel1 -M html
+        ./prowler/prowler -R "$ROLE" -A "$accountId" -g cislevel1 -M html -z
         echo "Report stored locally at: prowler/output/ directory"
         TOTAL_SEC=$((SECONDS - START_TIME))
         echo -e "Completed AWS Account: $accountId, using Role: $ROLE on $(date)"

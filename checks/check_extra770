@@ -13,7 +13,7 @@
 CHECK_ID_extra770="7.70"
 CHECK_TITLE_extra770="[extra770] Check for internet facing EC2 instances with Instance Profiles attached "
 CHECK_SCORED_extra770="NOT_SCORED"
-CHECK_TYPE_extra770="EXTRA"
+CHECK_CIS_LEVEL_extra770="EXTRA"
 CHECK_SEVERITY_extra770="Medium"
 CHECK_ASFF_RESOURCE_TYPE_extra770="AwsEc2Instance"
 CHECK_ALTERNATE_check770="extra770"
@@ -26,7 +26,11 @@ CHECK_CAF_EPIC_extra770='Infrastructure Security'
 extra770(){
   # "Check for internet facing EC2 Instances "
   for regx in $REGIONS; do
-    LIST_OF_PUBLIC_INSTANCES_WITH_INSTANCE_PROFILES=$($AWSCLI ec2 describe-instances $PROFILE_OPT --region $regx --query 'Reservations[*].Instances[?((IamInstanceProfile!=`null` && PublicIpAddress!=`null`))].[InstanceId,PublicIpAddress,IamInstanceProfile.Arn]' --output text)
+    LIST_OF_PUBLIC_INSTANCES_WITH_INSTANCE_PROFILES=$($AWSCLI ec2 describe-instances $PROFILE_OPT --region $regx --query 'Reservations[*].Instances[?((IamInstanceProfile!=`null` && PublicIpAddress!=`null`))].[InstanceId,PublicIpAddress,IamInstanceProfile.Arn]' --output text 2>&1)
+    if [[ $(echo "$LIST_OF_PUBLIC_INSTANCES_WITH_INSTANCE_PROFILES" | grep -E 'AccessDenied|UnauthorizedOperation|AuthorizationError') ]]; then
+        textInfo "$regx: Access Denied trying to describe instances" "$regx"
+        continue
+    fi 
     if [[ $LIST_OF_PUBLIC_INSTANCES_WITH_INSTANCE_PROFILES ]];then
       while read -r instance;do
         INSTANCE_ID=$(echo $instance | awk '{ print $1; }')

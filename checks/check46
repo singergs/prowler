@@ -14,7 +14,7 @@
 CHECK_ID_check46="4.6"
 CHECK_TITLE_check46="[check46] Ensure no Network ACLs allow ingress from 0.0.0.0/0 to Microsoft RDP port 3389"
 CHECK_SCORED_check46="SCORED"
-CHECK_TYPE_check46="LEVEL2"
+CHECK_CIS_LEVEL_check46="LEVEL2"
 CHECK_SEVERITY_check46="High"
 CHECK_ASFF_TYPE_check46="Software and Configuration Checks/Industry and Regulatory Standards/CIS AWS Foundations Benchmark"
 CHECK_ASFF_RESOURCE_TYPE_check46="AwsEc2NetworkAcl"
@@ -27,7 +27,11 @@ CHECK_CAF_EPIC_check46='Infrastructure Security'
 
 check46(){
   for regx in $REGIONS; do
-    NACL_LIST=$($AWSCLI ec2 describe-network-acls --query 'NetworkAcls[?Entries[?(((!PortRange) || (PortRange.From<=`3389` && PortRange.To>=`3389`)) && ((CidrBlock == `0.0.0.0/0`) && (Egress == `false`) && (RuleAction == `allow`)))]].{NetworkAclId:NetworkAclId}' $PROFILE_OPT --region $regx --output text)
+    NACL_LIST=$($AWSCLI ec2 describe-network-acls --query 'NetworkAcls[?Entries[?(((!PortRange) || (PortRange.From<=`3389` && PortRange.To>=`3389`)) && ((CidrBlock == `0.0.0.0/0`) && (Egress == `false`) && (RuleAction == `allow`)))]].{NetworkAclId:NetworkAclId}' $PROFILE_OPT --region $regx --output text 2>&1)
+    if [[ $(echo "$NACL_LIST" | grep -E 'AccessDenied|UnauthorizedOperation') ]]; then
+        textInfo "$regx: Access Denied trying to describe vpc network acls" "$regx"
+        continue
+    fi
     if [[ $NACL_LIST ]];then
       for NACL in $NACL_LIST;do
         textInfo "$regx: Found Network ACL: $NACL open to 0.0.0.0/0 for Microsoft RDP port 3389" "$regx" "$NACL"

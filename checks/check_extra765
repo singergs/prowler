@@ -23,7 +23,7 @@
 CHECK_ID_extra765="7.65"
 CHECK_TITLE_extra765="[extra765] Check if ECR image scan on push is enabled "
 CHECK_SCORED_extra765="NOT_SCORED"
-CHECK_TYPE_extra765="EXTRA"
+CHECK_CIS_LEVEL_extra765="EXTRA"
 CHECK_SEVERITY_extra765="Medium"
 CHECK_ALTERNATE_check765="extra765"
 CHECK_SERVICENAME_extra765="ecr"
@@ -36,7 +36,7 @@ extra765(){
   for region in $REGIONS; do
     LIST_ECR_REPOS=$($AWSCLI ecr describe-repositories $PROFILE_OPT --region $region --query "repositories[*].[repositoryName]" --output text 2>&1)
     if [[ $(echo "$LIST_ECR_REPOS" | grep AccessDenied) ]]; then
-      textFail "Access Denied Trying to describe ECR repositories"
+      textInfo "$region: Access Denied Trying to describe ECR repositories" "$region"
       continue
     fi
     if [[ ! -z "$LIST_ECR_REPOS" ]]; then
@@ -50,7 +50,7 @@ extra765(){
             textFail "$region: ECR repository $repo has scan on push disabled!" "$region" "$repo"
             ;;
           "None")
-            textInfo "$region: ECR repository $repo has no scanOnPush status, newer awscli needed" "$region" "$repo"
+            textInfo "$region: ECR repository $repo has no scanOnPush status: newer awscli needed" "$region" "$repo"
             ;;
           "*")
             textInfo "$region: ECR repository $repo has unknown scanOnPush status \"$SCAN_ENABLED\"" "$region" "$repo"

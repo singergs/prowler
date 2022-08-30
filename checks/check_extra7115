@@ -13,7 +13,7 @@
 CHECK_ID_extra7115="7.115"
 CHECK_TITLE_extra7115="[extra7115] Check if Glue database connection has SSL connection enabled."
 CHECK_SCORED_extra7115="NOT_SCORED"
-CHECK_TYPE_extra7115="EXTRA"
+CHECK_CIS_LEVEL_extra7115="EXTRA"
 CHECK_SEVERITY_extra7115="Medium"
 CHECK_ASFF_RESOURCE_TYPE_extra7115="AwsGlue"
 CHECK_ALTERNATE_check7115="extra7115"
@@ -25,7 +25,11 @@ CHECK_CAF_EPIC_extra7115='Data Protection'
 
 extra7115(){
   for regx in $REGIONS; do
-    CONNECTION_LIST=$($AWSCLI glue get-connections $PROFILE_OPT --region $regx  --output json --query 'ConnectionList[*].{Name:Name,SSL:ConnectionProperties.JDBC_ENFORCE_SSL}')
+    CONNECTION_LIST=$($AWSCLI glue get-connections $PROFILE_OPT --region $regx  --output json --query 'ConnectionList[*].{Name:Name,SSL:ConnectionProperties.JDBC_ENFORCE_SSL}' 2>&1)
+    if [[ $(echo "$CONNECTION_LIST" | grep -E 'AccessDenied|UnauthorizedOperation|AuthorizationError') ]]; then
+        textInfo "$regx: Access Denied trying to get connections" "$regx"
+        continue
+    fi
     if [[ $CONNECTION_LIST != '[]' ]]; then
       for connection in $(echo "${CONNECTION_LIST}" | jq -r '.[] | @base64'); do
           CONNECTION_NAME=$(echo $connection | base64 --decode   | jq -r '.Name' )

@@ -31,8 +31,8 @@ OUTPUT_FILE_NAME="report-unified-csv"
 EXTENSION_HTML="html"
 INPUT=$1
 IFS=',' # used inside the while loop for csv delimiter 
-HTML_LOGO_URL="https://github.com/toniblyx/prowler/"
-HTML_LOGO_IMG="https://raw.githubusercontent.com/toniblyx/prowler/master/util/html/prowler-logo.png"
+HTML_LOGO_URL="https://github.com/prowler-cloud/prowler/"
+HTML_LOGO_IMG="https://raw.githubusercontent.com/prowler-cloud/prowler/master/util/html/prowler-logo-new.png"
 
 
 [ ! -f $INPUT ] && { echo "$INPUT file not found"; exit 99; }
@@ -169,14 +169,14 @@ unset HTML_REPORT_INIT
 }
 
 addHtmlHeader > ${OUTPUT_FILE_NAME}.$EXTENSION_HTML
-while IFS=, read -r PROFILE ACCOUNT_NUM REPREGION TITLE_ID RESULT SCORED LEVEL TITLE_TEXT NOTES ASFF_COMPLIANCE_TYPE CHECK_SEVERITY CHECK_SERVICENAME;do
+while IFS=, read -r PROFILE ACCOUNT_NUM REGION_FROM_CHECK TITLE_ID RESULT SCORED LEVEL TITLE_TEXT NOTES ASFF_COMPLIANCE_TYPE CHECK_SEVERITY CHECK_SERVICENAME;do
   if [[ $RESULT == "INFO" ]]; then 
     echo '<tr class="table-info">' >> ${OUTPUT_FILE_NAME}.$EXTENSION_HTML
       echo '<td><i class="fas fa-info-circle"></i></td>' >> ${OUTPUT_FILE_NAME}.$EXTENSION_HTML
       echo '<td>INFO</td>' >> ${OUTPUT_FILE_NAME}.$EXTENSION_HTML
       echo '<td>'$CHECK_SEVERITY'</td>' >> ${OUTPUT_FILE_NAME}.$EXTENSION_HTML
       echo '<td>'$ACCOUNT_NUM'</td>' >> ${OUTPUT_FILE_NAME}.$EXTENSION_HTML
-      echo '<td>'$REPREGION'</td>' >> ${OUTPUT_FILE_NAME}.$EXTENSION_HTML
+      echo '<td>'$REGION_FROM_CHECK'</td>' >> ${OUTPUT_FILE_NAME}.$EXTENSION_HTML
       echo '<td>'$ASFF_COMPLIANCE_TYPE'</td>' >> ${OUTPUT_FILE_NAME}.$EXTENSION_HTML
       echo '<td>'$CHECK_SERVICENAME'</td>' >> ${OUTPUT_FILE_NAME}.$EXTENSION_HTML
       echo '<td>'$TITLE_ID'</td>' >> ${OUTPUT_FILE_NAME}.$EXTENSION_HTML
@@ -190,7 +190,7 @@ while IFS=, read -r PROFILE ACCOUNT_NUM REPREGION TITLE_ID RESULT SCORED LEVEL T
       echo '<td>PASS</td>' >> ${OUTPUT_FILE_NAME}.$EXTENSION_HTML
       echo '<td>'$CHECK_SEVERITY'</td>' >> ${OUTPUT_FILE_NAME}.$EXTENSION_HTML
       echo '<td>'$ACCOUNT_NUM'</td>' >> ${OUTPUT_FILE_NAME}.$EXTENSION_HTML
-      echo '<td>'$REPREGION'</td>' >> ${OUTPUT_FILE_NAME}.$EXTENSION_HTML
+      echo '<td>'$REGION_FROM_CHECK'</td>' >> ${OUTPUT_FILE_NAME}.$EXTENSION_HTML
       echo '<td>'$ASFF_COMPLIANCE_TYPE'</td>' >> ${OUTPUT_FILE_NAME}.$EXTENSION_HTML
       echo '<td>'$CHECK_SERVICENAME'</td>' >> ${OUTPUT_FILE_NAME}.$EXTENSION_HTML
       echo '<td>'$TITLE_ID'</td>' >> ${OUTPUT_FILE_NAME}.$EXTENSION_HTML
@@ -204,7 +204,7 @@ while IFS=, read -r PROFILE ACCOUNT_NUM REPREGION TITLE_ID RESULT SCORED LEVEL T
       echo '<td>FAIL</td>' >> ${OUTPUT_FILE_NAME}.$EXTENSION_HTML
       echo '<td>'$CHECK_SEVERITY'</td>' >> ${OUTPUT_FILE_NAME}.$EXTENSION_HTML
       echo '<td>'$ACCOUNT_NUM'</td>' >> ${OUTPUT_FILE_NAME}.$EXTENSION_HTML
-      echo '<td>'$REPREGION'</td>' >> ${OUTPUT_FILE_NAME}.$EXTENSION_HTML
+      echo '<td>'$REGION_FROM_CHECK'</td>' >> ${OUTPUT_FILE_NAME}.$EXTENSION_HTML
       echo '<td>'$ASFF_COMPLIANCE_TYPE'</td>' >> ${OUTPUT_FILE_NAME}.$EXTENSION_HTML
       echo '<td>'$CHECK_SERVICENAME'</td>' >> ${OUTPUT_FILE_NAME}.$EXTENSION_HTML
       echo '<td>'$TITLE_ID'</td>' >> ${OUTPUT_FILE_NAME}.$EXTENSION_HTML
@@ -218,7 +218,7 @@ while IFS=, read -r PROFILE ACCOUNT_NUM REPREGION TITLE_ID RESULT SCORED LEVEL T
       echo '<td>WARN</td>' >> ${OUTPUT_FILE_NAME}.$EXTENSION_HTML
       echo '<td>'$CHECK_SEVERITY'</td>' >> ${OUTPUT_FILE_NAME}.$EXTENSION_HTML
       echo '<td>'$ACCOUNT_NUM'</td>' >> ${OUTPUT_FILE_NAME}.$EXTENSION_HTML
-      echo '<td>'$REPREGION'</td>' >> ${OUTPUT_FILE_NAME}.$EXTENSION_HTML
+      echo '<td>'$REGION_FROM_CHECK'</td>' >> ${OUTPUT_FILE_NAME}.$EXTENSION_HTML
       echo '<td>'$ASFF_COMPLIANCE_TYPE'</td>' >> ${OUTPUT_FILE_NAME}.$EXTENSION_HTML
       echo '<td>'$CHECK_SERVICENAME'</td>' >> ${OUTPUT_FILE_NAME}.$EXTENSION_HTML
       echo '<td>'$TITLE_ID'</td>' >> ${OUTPUT_FILE_NAME}.$EXTENSION_HTML

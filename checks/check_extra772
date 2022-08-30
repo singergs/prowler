@@ -13,7 +13,7 @@
 CHECK_ID_extra772="7.72"
 CHECK_TITLE_extra772="[extra772] Check if elastic IPs are unused "
 CHECK_SCORED_extra772="NOT_SCORED"
-CHECK_TYPE_extra772="EXTRA"
+CHECK_CIS_LEVEL_extra772="EXTRA"
 CHECK_SEVERITY_extra772="Low"
 CHECK_ASFF_RESOURCE_TYPE_extra772="AwsEc2Eip"
 CHECK_ALTERNATE_check772="extra772"
@@ -25,7 +25,11 @@ CHECK_CAF_EPIC_extra772='Infrastructure Security'
 
 extra772(){
   for region in $REGIONS; do
-    EIP_DUMP=$($AWSCLI ec2 describe-addresses ${PROFILE_OPT} --region $region --output json)
+    EIP_DUMP=$($AWSCLI ec2 describe-addresses ${PROFILE_OPT} --region $region --output json 2>&1)
+    if [[ $(echo "$EIP_DUMP" | grep -E 'AccessDenied|UnauthorizedOperation|AuthorizationError') ]]; then
+        textInfo "$regx: Access Denied trying to describe addresses" "$regx"
+        continue
+    fi 
     EIP_LIST=$(echo $EIP_DUMP | jq -r '.Addresses[].AllocationId')
     if [[ $EIP_LIST ]]; then
       for eip in $EIP_LIST; do

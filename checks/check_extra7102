@@ -13,7 +13,7 @@
 CHECK_ID_extra7102="7.102"
 CHECK_TITLE_extra7102="[extra7102] Check if any of the Elastic or Public IP are in Shodan (requires Shodan API KEY)"
 CHECK_SCORED_extra7102="NOT_SCORED"
-CHECK_TYPE_extra7102="EXTRA"
+CHECK_CIS_LEVEL_extra7102="EXTRA"
 CHECK_SEVERITY_extra7102="High"
 CHECK_ASFF_RESOURCE_TYPE_extra7102="AwsEc2Eip"
 CHECK_ALTERNATE_check7102="extra7102"
@@ -23,7 +23,7 @@ CHECK_REMEDIATION_extra7102='Check Identified IPs; consider changing them to pri
 CHECK_DOC_extra7102='https://www.shodan.io/'
 CHECK_CAF_EPIC_extra7102='Infrastructure Security'
 
-# Watch out, always use Shodan API key, if you use `curl https://www.shodan.io/host/{ip}` massively 
+# Watch out, always use Shodan API key, if you use `curl https://www.shodan.io/host/{ip}` massively
 # your IP will be banned by Shodan
 
 # This is the right way to do so
@@ -33,10 +33,14 @@ CHECK_CAF_EPIC_extra7102='Infrastructure Security'
 
 extra7102(){
   if [[ ! $SHODAN_API_KEY ]]; then
-    textInfo "[extra7102] Requires a Shodan API key to work. Use -N <shodan_api_key>"
-  else 
+    textInfo "[extra7102] Requires a Shodan API key to work. Use -N <shodan_api_key>" "$REGION"
+  else
     for regx in $REGIONS; do
-      LIST_OF_EIP=$($AWSCLI $PROFILE_OPT --region $regx ec2 describe-network-interfaces --query 'NetworkInterfaces[*].Association.PublicIp' --output text)
+      LIST_OF_EIP=$($AWSCLI $PROFILE_OPT --region $regx ec2 describe-network-interfaces --query 'NetworkInterfaces[*].Association.PublicIp' --output text 2>&1)
+      if [[ $(echo "$LIST_OF_EIP" | grep -E 'AccessDenied|UnauthorizedOperation|AuthorizationError') ]]; then
+          textInfo "$regx: Access Denied trying to describe network interfaces" "$regx"
+          continue
+      fi
       if [[ $LIST_OF_EIP ]]; then
         for ip in $LIST_OF_EIP;do
           SHODAN_QUERY=$(curl -ks https://api.shodan.io/shodan/host/$ip?key=$SHODAN_API_KEY)

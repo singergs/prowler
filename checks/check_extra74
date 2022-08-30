@@ -13,7 +13,7 @@
 CHECK_ID_extra74="7.4"
 CHECK_TITLE_extra74="[extra74] Ensure there are no Security Groups without ingress filtering being used"
 CHECK_SCORED_extra74="NOT_SCORED"
-CHECK_TYPE_extra74="EXTRA"
+CHECK_CIS_LEVEL_extra74="EXTRA"
 CHECK_SEVERITY_extra74="High"
 CHECK_ASFF_RESOURCE_TYPE_extra74="AwsEc2SecurityGroup"
 CHECK_ALTERNATE_extra704="extra74"
@@ -29,7 +29,11 @@ CHECK_CAF_EPIC_extra74='Infrastructure Security'
 extra74(){
   # "Ensure there are no Security Groups without ingress filtering being used "
   for regx in $REGIONS; do
-    LIST_OF_SECURITYGROUPS=$($AWSCLI ec2 describe-security-groups $PROFILE_OPT --region $regx --filters "Name=ip-permission.cidr,Values=0.0.0.0/0" --query "SecurityGroups[].[GroupId]" --output text --max-items $MAXITEMS)
+    LIST_OF_SECURITYGROUPS=$($AWSCLI ec2 describe-security-groups $PROFILE_OPT --region $regx --filters "Name=ip-permission.cidr,Values=0.0.0.0/0" --query "SecurityGroups[].[GroupId]" --output text --max-items $MAXITEMS 2>&1)
+    if [[ $(echo "$LIST_OF_SECURITYGROUPS" | grep -E 'AccessDenied|UnauthorizedOperation') ]]; then
+        textInfo "$regx: Access Denied trying to describe security groups" "$regx"
+        continue
+    fi
     for SG_ID in $LIST_OF_SECURITYGROUPS; do
       SG_NO_INGRESS_FILTER=$($AWSCLI ec2 describe-network-interfaces $PROFILE_OPT --region $regx --filters "Name=group-id,Values=$SG_ID" --query "length(NetworkInterfaces)" --output text)
       if [[ $SG_NO_INGRESS_FILTER -ne 0 ]];then

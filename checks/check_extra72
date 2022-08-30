@@ -13,7 +13,7 @@
 CHECK_ID_extra72="7.2"
 CHECK_TITLE_extra72="[extra72] Ensure there are no EBS Snapshots set as Public"
 CHECK_SCORED_extra72="NOT_SCORED"
-CHECK_TYPE_extra72="EXTRA"
+CHECK_CIS_LEVEL_extra72="EXTRA"
 CHECK_SEVERITY_extra72="Critical"
 CHECK_ASFF_RESOURCE_TYPE_extra72="AwsEc2Snapshot"
 CHECK_ALTERNATE_extra702="extra72"
@@ -28,7 +28,11 @@ CHECK_CAF_EPIC_extra72='Data Protection'
 extra72(){
   # "Ensure there are no EBS Snapshots set as Public "
   for regx in $REGIONS; do
-    LIST_OF_EBS_SNAPSHOTS=$($AWSCLI ec2 describe-snapshots $PROFILE_OPT --region $regx --owner-ids $ACCOUNT_NUM --output text --query 'Snapshots[*].{ID:SnapshotId}' --max-items $MAXITEMS | grep -v None 2> /dev/null)
+    LIST_OF_EBS_SNAPSHOTS=$($AWSCLI ec2 describe-snapshots $PROFILE_OPT --region $regx --owner-ids $ACCOUNT_NUM --output text --query 'Snapshots[*].{ID:SnapshotId}' --max-items $MAXITEMS 2>&1 | grep -v None )
+    if [[ $(echo "$LIST_OF_EBS_SNAPSHOTS" | grep -E 'AccessDenied|UnauthorizedOperation') ]]; then
+        textInfo "$regx: Access Denied trying to describe snapshot" "$regx"
+        continue
+    fi
     for snapshot in $LIST_OF_EBS_SNAPSHOTS; do
       SNAPSHOT_IS_PUBLIC=$($AWSCLI ec2 describe-snapshot-attribute $PROFILE_OPT --region $regx --output text --snapshot-id $snapshot --attribute createVolumePermission --query "CreateVolumePermissions[?Group=='all']")
       if [[ $SNAPSHOT_IS_PUBLIC ]];then

@@ -1,0 +1,149 @@
+#!/usr/bin/env bash
+
+# Prowler - the handy cloud security tool (copyright 2021) by Toni de la Fuente
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy
+# of the License at http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software distributed
+# under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+# CONDITIONS OF ANY KIND, either express or implied. See the License for the
+# specific language governing permissions and limitations under the License.
+
+###############################################################################
+
+# Probably the easier and quickest way to get a resouce inventory in AWS.
+
+# Lists (almost) all resources in all regions based on:
+# https://docs.aws.amazon.com/resourcegroupstagging/latest/APIReference/API_GetResources.html
+
+# this list is not accurate https://docs.aws.amazon.com/ARG/latest/userguide/supported-resources.html
+# don't fully trust that list column "Tag-based Groups". 
+# as far as I can see it doesn't include:
+# CodeBuild build projects like arn:aws:codebuild:eu-west-1:123456789012:build/Abcdefg
+# despite the supported-resources documentation page
+
+# Requires IAM permissions:
+# resource-groups:Get*
+# resource-groups:GroupResources
+
+
+# Quick inventory part
+quick_inventory(){
+    # Create a temporary file to store all resources arn 
+    TEMP_INVENTORY_FILE=$(mktemp -t prowler-inventory-${ACCOUNT_NUM}.XXXXXXXXXX)
+    INVENTORY_FILE="$OUTPUT_DIR/prowler-inventory-${ACCOUNT_NUM}-${OUTPUT_DATE}.csv"
+
+    echo "-=- Running the inventory for AWS Account ${BLUE}${ACCOUNT_NUM}${NORMAL} - ${BLUE}BETA FEATURE${NORMAL} -=-"
+
+    # get all resources per region and getting only their ARN
+
+    echo -ne "\n # Counting IAM resources in default region $REGION... "
+    # since this api doesn't get IAM properly, first we get it directly:
+    # get IAM_ROLES
+    $AWSCLI iam list-roles --query "Roles[].Arn" \
+        $PROFILE_OPT \
+        --region $REGION \
+        --output json | jq -r '.[]' >> "${TEMP_INVENTORY_FILE}" 
+
+    # get IAM_USERS
+    $AWSCLI iam list-users --query "Users[].Arn" \
+        $PROFILE_OPT \
+        --region $REGION \
+        --output json \
+        --query "Users[].Arn" | jq -r '.[]'  >> "${TEMP_INVENTORY_FILE}" 
+
+    # get IAM_GROUPS
+    $AWSCLI iam list-groups --query "Groups[].Arn" \
+        $PROFILE_OPT \
+        --region $REGION \
+        --output json | jq -r '.[]' >> "${TEMP_INVENTORY_FILE}" 
+
+    # get IAM_MANAGED_POLICIES
+    $AWSCLI iam list-policies --query "Policies[].Arn" \
+        $PROFILE_OPT \
+        --region $REGION \
+        --output json | jq -r '.[]' | grep :${ACCOUNT_NUM}:  >> "${TEMP_INVENTORY_FILE}" 
+
+    # get SAML PROVIDERS
+    $AWSCLI iam list-saml-providers --query "SAMLProviderList[].Arn" \
+        $PROFILE_OPT \
+        --region $REGION \
+        --output json | jq -r '.[]'  >> "${TEMP_INVENTORY_FILE}" 
+
+    echo -e "${OK}DONE${NORMAL}"
+
+    # get other resources using resourcegroupstaggingapi get-resources
+    echo -e "\n # Counting rest of resources by region..."
+    for region in $REGIONS; do
+    #(
+        echo -ne " - $region: "
+        AWS_RESOURCES=$($AWSCLI resourcegroupstaggingapi get-resources \
+            $PROFILE_OPT \
+            --region $region \
+            --query ResourceTagMappingList[].ResourceARN \
+            --output json 2>&1)
+        
+        # error handling 
+        if grep -q -E 'service control policy' <<< "${AWS_RESOURCES}"; then
+            echo -e "${BAD}blocked by a SCP${NORMAL}"
+            continue
+        fi
+
+        if grep -q -E 'AccessDenied|UnauthorizedOperation|AuthorizationError' <<< "$AWS_RESOURCES"; then
+            echo -e "${BAD}Access Denied trying to get AWS Resources${NORMAL}"
+            continue
+        fi
+       
+        jq -r '.[]' <<< "${AWS_RESOURCES}" >> "${TEMP_INVENTORY_FILE}-${region}" 
+        TOTAL_RESOURCES_FOUND_REGION=$(awk 'END { print NR }' "${TEMP_INVENTORY_FILE}-${region}")
+
+        if [ "${region}" == "us-east-1" ]; then
+            TOTAL_IAM_RESOURCES_FOUND=$(grep -c :"iam": "${TEMP_INVENTORY_FILE}-${region}")
+            TOTAL_RESOURCES_FOUND_REGION=$((${TOTAL_RESOURCES_FOUND_REGION}-${region}+${TOTAL_IAM_RESOURCES_FOUND}))
+        fi 
+
+        echo -e "${OK}${TOTAL_RESOURCES_FOUND_REGION}${NORMAL} resources!"
+        
+        cat "${TEMP_INVENTORY_FILE}-${region}" >> ${TEMP_INVENTORY_FILE}
+        cleanInventoryTemporaryFilesByRegion
+    #) &
+    done 
+    #wait
+    
+    # Generate file in CSV format
+    # send header first
+    echo "aws_partition,aws_service,aws_region,aws_account_id,subservice_resource,arn" > "${INVENTORY_FILE}"
+    while IFS=: read -r arn aws_partition aws_service aws_region aws_account_id subservice_resource; do
+        echo "$aws_partition,$aws_service,$aws_region,$aws_account_id,$subservice_resource,$aws_partition:$aws_service:$aws_region:$aws_account_id:$subservice_resource"
+    done < "${TEMP_INVENTORY_FILE}" >> "${INVENTORY_FILE}"
+
+    # Show resources found per service
+    echo -e "\n-=- List of type of resources per service for AWS Account ${OK}${ACCOUNT_NUM}${NORMAL} -=-\n"
+    LIST_OF_DETECTED_SERVICES=$(grep -v subservice_resource < "${INVENTORY_FILE}" | awk -F',' '{ print $2 }' | sort -u )
+    for aws_service in $LIST_OF_DETECTED_SERVICES;do
+        echo "-=- ${YELLOW}$aws_service${NORMAL} service -=-"
+        if [[ $aws_service == 's3' ]];then
+            TOTAL_S3_BUCKETS=$(grep ",$aws_service," < "${INVENTORY_FILE}" | awk -F',' '{ print $5 }' | wc -l | xargs)
+            echo "$TOTAL_S3_BUCKETS buckets"
+        else
+            TOTAL_RESOURCE_SERVICE=$(grep ",$aws_service," < "${INVENTORY_FILE}" | awk -F',' '{ print $5 }' | awk -F'/' '{ print $1 }' | awk -F':' '{ print $1 }' | sort | uniq -c)
+            echo "$TOTAL_RESOURCE_SERVICE"
+        fi
+    done
+    
+    TOTAL_RESOURCES_FOUND=$(awk 'END { print NR - 1 }' ${INVENTORY_FILE})
+    echo -e "\nTotal resources found: ${OK}$TOTAL_RESOURCES_FOUND${NORMAL}\n"
+    echo -e "More details in file: ${OK}${INVENTORY_FILE}${NORMAL}\n"
+    # Clean temp file
+    cleanInventoryTemporaryFiles
+}
+
+cleanInventoryTemporaryFiles() {
+    rm -fr "${TEMP_INVENTORY_FILE}"
+}
+
+cleanInventoryTemporaryFilesByRegion() {
+    rm -fr "${TEMP_INVENTORY_FILE}-${region}"
+}

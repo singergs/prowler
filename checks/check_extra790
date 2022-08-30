@@ -12,9 +12,9 @@
 # specific language governing permissions and limitations under the License.
 
 CHECK_ID_extra790="7.90"
-CHECK_TITLE_extra790="[extra790] Find trust boundaries in VPC endpoint services whitelisted principles"
+CHECK_TITLE_extra790="[extra790] Find trust boundaries in VPC endpoint services allowlisted principles"
 CHECK_SCORED_extra790="NOT_SCORED"
-CHECK_TYPE_extra790="EXTRA"
+CHECK_CIS_LEVEL_extra790="EXTRA"
 CHECK_SEVERITY_extra790="Medium"
 CHECK_ASFF_RESOURCE_TYPE_extra790="AwsEc2Vpc"
 CHECK_ALTERNATE_extra790="extra790"
@@ -32,8 +32,11 @@ extra790(){
                                 ${PROFILE_OPT} \
                                 --query "ServiceDetails[?Owner=='${ACCOUNT_NUM}'].ServiceId" \
                                 --region ${regx} \
-                                --output text | xargs
-                                )
+                                --output text | xargs 2>&1)
+    if [[ $(echo "$ENDPOINT_SERVICES_IDS" | grep -E 'AccessDenied|UnauthorizedOperation|AuthorizationError') ]]; then
+        textInfo "$regx: Access Denied trying to describe VPC endpoint services" "$regx"
+        continue
+    fi
 
         for ENDPOINT_SERVICE_ID in ${ENDPOINT_SERVICES_IDS}; do
             ENDPOINT_PERMISSIONS_LIST=$(${AWSCLI} ec2 describe-vpc-endpoint-service-permissions \
