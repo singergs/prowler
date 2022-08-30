@@ -11,18 +11,18 @@
 # CONDITIONS OF ANY KIND, either express or implied. See the License for the
 # specific language governing permissions and limitations under the License.
 
-CHECK_ID_extra7181="7.181"
-CHECK_TITLE_extra7181="[extra7181] Directory Service monitoring with CloudWatch logs"
-CHECK_SCORED_extra7181="NOT_SCORED"
-CHECK_CIS_LEVEL_extra7181="EXTRA"
-CHECK_SEVERITY_extra7181="Medium"
-CHECK_ASFF_RESOURCE_TYPE_extra7181="AwsDirectoryService"
-CHECK_ALTERNATE_extra7181="extra7181"
-CHECK_SERVICENAME_extra7181="ds"
-CHECK_RISK_cextra7181="As a best practice, monitor your organization to ensure that changes are logged. This helps you to ensure that any unexpected change can be investigated and unwanted changes can be rolled back."
-CHECK_REMEDIATION_extra7181="It is recommended that that the export of logs is enabled"
-CHECK_DOC_extra7181="CHECK_DOC_extra7181='https://docs.aws.amazon.com/directoryservice/latest/admin-guide/incident-response.html'"
-CHECK_CAF_EPIC_extra7181="Infrastructure Security"
+CHECK_ID_extra7181='7.181'
+CHECK_TITLE_extra7181='[extra7181] Directory Service monitoring with CloudWatch logs'
+CHECK_SCORED_extra7181='NOT_SCORED'
+CHECK_CIS_LEVEL_extra7181='EXTRA'
+CHECK_SEVERITY_extra7181='Medium'
+CHECK_ASFF_RESOURCE_TYPE_extra7181='AwsDirectoryService'
+CHECK_ALTERNATE_extra7181='extra7181'
+CHECK_SERVICENAME_extra7181='ds'
+CHECK_RISK_cextra7181='As a best practice, monitor your organization to ensure that changes are logged. This helps you to ensure that any unexpected change can be investigated and unwanted changes can be rolled back.'
+CHECK_REMEDIATION_extra7181='It is recommended that that the export of logs is enabled'
+CHECK_DOC_extra7181='CHECK_DOC_extra7181='https://docs.aws.amazon.com/directoryservice/latest/admin-guide/incident-response.html''
+CHECK_CAF_EPIC_extra7181='Infrastructure Security'
 
 extra7181(){
   for regx in $REGIONS; do
